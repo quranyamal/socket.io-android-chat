@@ -1,0 +1,3 @@
+[submodule "chess-cipher"]
+	path = chess-cipher
+	url = https://github.com/quranyamal/chess-cipher.git
