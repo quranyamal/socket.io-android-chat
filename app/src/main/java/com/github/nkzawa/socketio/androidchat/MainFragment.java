@@ -28,9 +28,14 @@ import android.widget.Toast;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.nio.ByteBuffer;
+import java.nio.charset.Charset;
+import java.nio.charset.CharsetDecoder;
+import java.nio.charset.CharsetEncoder;
 import java.util.ArrayList;
 import java.util.List;
 
+import chesscipher.ChessCipher;
 import io.socket.client.Socket;
 import io.socket.emitter.Emitter;
 
@@ -56,6 +61,11 @@ public class MainFragment extends Fragment {
     private Socket mSocket;
 
     private Boolean isConnected = true;
+    private ChessCipher cipher;
+
+    public static Charset charset;
+    public static CharsetEncoder encoder;
+    public static CharsetDecoder decoder;
 
     public MainFragment() {
         super();
@@ -95,12 +105,21 @@ public class MainFragment extends Fragment {
         mSocket.connect();
 
         startSignIn();
+        cipher = new ChessCipher();
+        cipher.setKey("GAJAH");
+
+        charset = Charset.forName("UTF-8");
+        encoder = charset.newEncoder();
+        decoder = charset.newDecoder();
+
     }
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         return inflater.inflate(R.layout.fragment_main, container, false);
+
+
     }
 
     @Override
@@ -250,17 +269,23 @@ public class MainFragment extends Fragment {
 
         mTyping = false;
 
-        String message = mInputMessageView.getText().toString().trim();
-        if (TextUtils.isEmpty(message)) {
+        String plainMessage = mInputMessageView.getText().toString().trim();
+
+
+        if (TextUtils.isEmpty(plainMessage)) {
             mInputMessageView.requestFocus();
             return;
         }
 
         mInputMessageView.setText("");
-        addMessage(mUsername, message);
+        addMessage(mUsername, plainMessage);
+
+        cipher.setData(plainMessage);
+        cipher.encrypt();
+        String encryptedMessage = cipher.getData().toString();
 
         // perform the sending message attempt.
-        mSocket.emit("new message", message);
+        mSocket.emit("new message", encryptedMessage);
     }
 
     private void startSignIn() {
@@ -335,17 +360,22 @@ public class MainFragment extends Fragment {
                 public void run() {
                     JSONObject data = (JSONObject) args[0];
                     String username;
-                    String message;
+                    String encryptedMessage;
                     try {
                         username = data.getString("username");
-                        message = data.getString("message");
+                        encryptedMessage = data.getString("message");
                     } catch (JSONException e) {
                         Log.e(TAG, e.getMessage());
                         return;
                     }
 
+                    cipher.setData(encryptedMessage);
+                    cipher.decrypt();
+
+                    String plainMessage = cipher.getData().toString();
+
                     removeTyping(username);
-                    addMessage(username, message);
+                    addMessage(username, plainMessage);
                 }
             });
         }
@@ -449,5 +479,27 @@ public class MainFragment extends Fragment {
             mSocket.emit("stop typing");
         }
     };
+
+//    public static ByteBuffer str_to_bb(String msg){
+//        try{
+//            return encoder.encode(CharBuffer.wrap(msg));
+//        }catch(Exception e){e.printStackTrace();}
+//        return null;
+//    }
+//
+//    public static String bb_to_str(ByteBuffer buffer){
+//        String data = "";
+//        try{
+//            int old_position = buffer.position();
+//            data = decoder.decode(buffer).toString();
+//            // reset buffer's position to its original so it is not altered:
+//            buffer.position(old_position);
+//        }catch (Exception e){
+//            e.printStackTrace();
+//            return "";
+//        }
+//        return data;
+//    }
+
 }
 
