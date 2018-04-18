@@ -11,6 +11,7 @@ import android.support.v7.widget.RecyclerView;
 import android.text.Editable;
 import android.text.TextUtils;
 import android.text.TextWatcher;
+import android.util.Base64;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
@@ -282,10 +283,10 @@ public class MainFragment extends Fragment {
 
         cipher.setData(plainMessage);
         cipher.encrypt();
-        String encryptedMessage = cipher.getData().toString();
-
+        byte[] encryptedMessage = cipher.getData().getBytesData();
+        String base64String= Base64.encodeToString(encryptedMessage, 0);
         // perform the sending message attempt.
-        mSocket.emit("new message", encryptedMessage);
+        mSocket.emit("new message", base64String);
     }
 
     private void startSignIn() {
@@ -369,7 +370,8 @@ public class MainFragment extends Fragment {
                         return;
                     }
 
-                    cipher.setData(encryptedMessage);
+                    byte[] messageBytes = Base64.decode(encryptedMessage, 0);
+                    cipher.setData(messageBytes);
                     cipher.decrypt();
 
                     String plainMessage = cipher.getData().toString();
