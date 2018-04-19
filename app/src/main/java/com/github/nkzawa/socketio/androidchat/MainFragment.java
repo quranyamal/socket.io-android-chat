@@ -11,6 +11,7 @@ import android.support.v7.widget.RecyclerView;
 import android.text.Editable;
 import android.text.TextUtils;
 import android.text.TextWatcher;
+import android.util.Base64;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
@@ -30,12 +31,16 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.math.BigInteger;
+import java.nio.charset.Charset;
+import java.nio.charset.CharsetDecoder;
+import java.nio.charset.CharsetEncoder;
 import java.util.ArrayList;
 import java.util.List;
 
 import javax.crypto.Cipher;
 import javax.crypto.spec.SecretKeySpec;
 
+import chesscipher.ChessCipher;
 import io.socket.client.Socket;
 import io.socket.emitter.Emitter;
 
@@ -64,8 +69,9 @@ public class MainFragment extends Fragment {
     private String mFriendname;
     private String mFriendid;
     private Socket mSocket;
-
     private Boolean isConnected = true;
+
+    ChessCipher chessCipher;
 
     BigInteger _p = new BigInteger ("ffffffff00000001000000000000000000000000ffffffffffffffffffffffff", 16);
     BigInteger _a = new BigInteger ("ffffffff00000001000000000000000000000000fffffffffffffffffffffffc", 16);
@@ -78,6 +84,10 @@ public class MainFragment extends Fragment {
     private Point friendPublicKey;
     private Point secretKey;
     private String cipherKey;
+
+    public static Charset charset;
+    public static CharsetEncoder encoder;
+    public static CharsetDecoder decoder;
 
     public MainFragment() {
         super();
@@ -118,21 +128,14 @@ public class MainFragment extends Fragment {
         mSocket.connect();
 
         _c = new Curve(_a, _b, _p);
+        chessCipher = new ChessCipher();
         privateKey = new ECCDH().generatePrivateKey(_n);
         basePoint = new ECCDH().generatePublicKey(_c);
         publicKey = new ECCDH().multiplePoint(basePoint, privateKey, _c);
 
-
-        String inputs;
-        inputs = "test";
-        try {
-            inputs = encrypt(inputs,"kenapa");
-            inputs = decrypt(inputs, "kenapa");
-            Log.e("input",inputs);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-
+        charset = Charset.forName("UTF-8");
+        encoder = charset.newEncoder();
+        decoder = charset.newDecoder();
 
         startSignIn();
     }
@@ -310,7 +313,7 @@ public class MainFragment extends Fragment {
         // perform the sending message attempt.
         try {
             Log.e("BEFORE ENCRYPT", cipherKey);
-            message = this.encrypt(message,cipherKey) + SEPARATOR + mFriendid;
+            message = this.encrypt(message) + SEPARATOR + mFriendid;
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -398,7 +401,7 @@ public class MainFragment extends Fragment {
                     try {
                         username = data.getString("username");
                         message = data.getString("message");
-                        message = decrypt(message, cipherKey);
+                        message = decrypt(message);
                     } catch (JSONException e) {
                         Log.e(TAG, e.getMessage());
                         return;
@@ -516,6 +519,7 @@ public class MainFragment extends Fragment {
                         friendPublicKey = new Point(pubKey);
                         secretKey = new ECCDH().multiplePoint(friendPublicKey, privateKey, _c);
                         cipherKey = secretKey.getX().toString();
+                        chessCipher.setKey(cipherKey);
                         //addMessage("key",cipherKey);
                         //addMessage("selfX",publicKey.getX().toString());
                         //addMessage("selfY",publicKey.getY().toString());
@@ -541,38 +545,19 @@ public class MainFragment extends Fragment {
         }
     };
 
-    private String encrypt(String strClearText,String strKey) throws Exception{
-        String strData="";
-
-        try {
-            SecretKeySpec skeyspec=new SecretKeySpec(strKey.getBytes(),"Blowfish");
-            Cipher cipher = Cipher.getInstance("Blowfish");
-            cipher.init(Cipher.ENCRYPT_MODE, skeyspec);
-            byte[] encrypted=cipher.doFinal(strClearText.getBytes());
-            strData=new String(encrypted);
-
-        } catch (Exception e) {
-            e.printStackTrace();
-            throw new Exception(e);
-        }
-        return strData;
+    private String encrypt(String plainMessage) {
+        this.chessCipher.setData(plainMessage);
+        this.chessCipher.encrypt();
+        byte[] encryptedMessage = chessCipher.getData().getBytesData();
+        return Base64.encodeToString(encryptedMessage, 0);
     }
 
-    public String decrypt(String strEncrypted,String strKey) throws Exception{
-        String strData="";
+    public String decrypt(String encryptedMessage) {
+        byte[] messageBytes = Base64.decode(encryptedMessage, 0);
+        chessCipher.setData(messageBytes);
+        chessCipher.decrypt();
 
-        try {
-            SecretKeySpec skeyspec=new SecretKeySpec(strKey.getBytes(),"Blowfish");
-            Cipher cipher=Cipher.getInstance("Blowfish");
-            cipher.init(Cipher.DECRYPT_MODE, skeyspec);
-            byte[] decrypted=cipher.doFinal(strEncrypted.getBytes());
-            strData=new String(decrypted);
-
-        } catch (Exception e) {
-            e.printStackTrace();
-            throw new Exception(e);
-        }
-        return strData;
+        return chessCipher.getData().toString();
     }
 }
 
