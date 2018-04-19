@@ -29,8 +29,12 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
+
+import javax.crypto.Cipher;
+import javax.crypto.spec.SecretKeySpec;
 
 import io.socket.client.Socket;
 import io.socket.emitter.Emitter;
@@ -62,6 +66,18 @@ public class MainFragment extends Fragment {
     private Socket mSocket;
 
     private Boolean isConnected = true;
+
+    BigInteger _p = new BigInteger ("ffffffff00000001000000000000000000000000ffffffffffffffffffffffff", 16);
+    BigInteger _a = new BigInteger ("ffffffff00000001000000000000000000000000fffffffffffffffffffffffc", 16);
+    BigInteger _b = new BigInteger ("5ac635d8aa3a93e7b3ebbd55769886bc651d06b0cc53b0f63bce3c3e27d2604b", 16);
+    private BigInteger _n = new BigInteger ("ffffffff00000000ffffffffffffffffbce6faada7179e84f3b9cac2fc632551", 16);
+    private Curve _c;
+    private BigInteger privateKey;
+    private Point basePoint;
+    private Point publicKey;
+    private Point friendPublicKey;
+    private Point secretKey;
+    private String cipherKey;
 
     public MainFragment() {
         super();
@@ -98,10 +114,18 @@ public class MainFragment extends Fragment {
         mSocket.on("user left", onUserLeft);
         mSocket.on("typing", onTyping);
         mSocket.on("stop typing", onStopTyping);
+        mSocket.on("public key", onReceivePublicKey);
         mSocket.connect();
+
+        _c = new Curve(_a, _b, _p);
+        privateKey = new ECCDH().generatePrivateKey(_n);
+        basePoint = new ECCDH().generatePublicKey(_c);
+        publicKey = new ECCDH().multiplePoint(basePoint, privateKey, _c);
 
         startSignIn();
     }
+
+
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
@@ -124,6 +148,7 @@ public class MainFragment extends Fragment {
         mSocket.off("user left", onUserLeft);
         mSocket.off("typing", onTyping);
         mSocket.off("stop typing", onStopTyping);
+        mSocket.off("public key",onReceivePublicKey);
 
     }
 
@@ -194,6 +219,8 @@ public class MainFragment extends Fragment {
         addLog(getResources().getString(R.string.message_welcome));
         addParticipantsLog(numUsers);
         Log.e("FRIENDID", mFriendid);
+        String message = publicKey.toString() + SEPARATOR + mFriendid;
+        mSocket.emit("public key", message);
     }
 
     @Override
@@ -269,7 +296,12 @@ public class MainFragment extends Fragment {
         addMessage(mUsername, message);
 
         // perform the sending message attempt.
-        message = message + SEPARATOR + mFriendid;
+        try {
+            Log.e("BEFORE ENCRYPT", cipherKey);
+            message = this.encrypt(message,cipherKey) + SEPARATOR + mFriendid;
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
         mSocket.emit("new message", message);
     }
 
@@ -349,14 +381,17 @@ public class MainFragment extends Fragment {
                 @Override
                 public void run() {
                     JSONObject data = (JSONObject) args[0];
-                    String username;
-                    String message;
+                    String username = null;
+                    String message = null;
                     try {
                         username = data.getString("username");
                         message = data.getString("message");
+                        message = decrypt(message, cipherKey);
                     } catch (JSONException e) {
                         Log.e(TAG, e.getMessage());
                         return;
+                    } catch (Exception e) {
+                        e.printStackTrace();
                     }
 
                     removeTyping(username);
@@ -456,6 +491,38 @@ public class MainFragment extends Fragment {
         }
     };
 
+    private Emitter.Listener onReceivePublicKey = new Emitter.Listener() {
+        @Override
+        public void call(final Object... args) {
+            getActivity().runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    JSONObject data = (JSONObject) args[0];
+                    Log.e("CEK","RECEIVE PUBLIC KEY");
+                    try {
+                        String pubKey = data.getString("pubKey");
+                        friendPublicKey = new Point(pubKey);
+                        secretKey = new ECCDH().multiplePoint(friendPublicKey, privateKey, _c);
+                        cipherKey = secretKey.getX().toString();
+                        addMessage("key",cipherKey);
+                        addMessage("selfX",publicKey.getX().toString());
+                        addMessage("selfY",publicKey.getY().toString());
+                        addMessage("frndX",friendPublicKey.getX().toString());
+                        addMessage("frndY",friendPublicKey.getY().toString());
+                        addMessage("p+p", (new ECCDH().additionPoint(friendPublicKey, friendPublicKey, _c)).toString());
+                        addMessage("p*p", (new ECCDH().doublePoint(friendPublicKey, _c)).toString());
+                        Log.e("CEK KEY", cipherKey);
+                        Log.e("p+p", (new ECCDH().additionPoint(friendPublicKey, friendPublicKey, _c)).toString());
+                        Log.e("p*p", (new ECCDH().doublePoint(friendPublicKey, _c)).toString());
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                    }
+                }
+            });
+
+        }
+    };
+
 
     private Runnable onTypingTimeout = new Runnable() {
         @Override
@@ -466,5 +533,39 @@ public class MainFragment extends Fragment {
             mSocket.emit("stop typing");
         }
     };
+
+    private String encrypt(String strClearText,String strKey) throws Exception{
+        String strData="";
+
+        try {
+            SecretKeySpec skeyspec=new SecretKeySpec(strKey.getBytes(),"Blowfish");
+            Cipher cipher = Cipher.getInstance("Blowfish");
+            cipher.init(Cipher.ENCRYPT_MODE, skeyspec);
+            byte[] encrypted=cipher.doFinal(strClearText.getBytes());
+            strData=new String(encrypted);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new Exception(e);
+        }
+        return strData;
+    }
+
+    public String decrypt(String strEncrypted,String strKey) throws Exception{
+        String strData="";
+
+        try {
+            SecretKeySpec skeyspec=new SecretKeySpec(strKey.getBytes(),"Blowfish");
+            Cipher cipher=Cipher.getInstance("Blowfish");
+            cipher.init(Cipher.DECRYPT_MODE, skeyspec);
+            byte[] decrypted=cipher.doFinal(strEncrypted.getBytes());
+            strData=new String(decrypted);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new Exception(e);
+        }
+        return strData;
+    }
 }
 

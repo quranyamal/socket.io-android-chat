@@ -2,6 +2,7 @@ package com.github.nkzawa.socketio.androidchat;
 
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
@@ -32,12 +33,16 @@ public class UserListActivity extends AppCompatActivity {
 
     private HashMap<String,String> usernameIdMap;
 
+    private String mUsername;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_user_list);
         context = this;
         usernameIdMap = new HashMap<String, String>();
+        SharedPreferences sharedPref = this.getPreferences(Context.MODE_PRIVATE);
+        mUsername = sharedPref.getString("username","");
 
         ChatApplication app = (ChatApplication) getApplication();
         mSocket = app.getSocket();
@@ -85,9 +90,11 @@ public class UserListActivity extends AppCompatActivity {
                         for (int i = 0; i < userlist.length(); i++) {
                             JSONObject user = userlist.getJSONObject(i);
                             String username = user.getString("username");
-                            String id = user.getString("id");
-                            usernameIdMap.put(username,id);
-                            items[i] = username;
+                            if (!username.equals(mUsername)) {
+                                String id = user.getString("id");
+                                usernameIdMap.put(username, id);
+                                items[i] = username;
+                            }
                         }
                         ListViewAdapter adapter = new ListViewAdapter(context, R.layout.list_item, items);
                         // Bind data to the ListView

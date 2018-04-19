@@ -1,7 +1,9 @@
 package com.github.nkzawa.socketio.androidchat;
 
 import android.app.Activity;
+import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.util.Log;
@@ -98,6 +100,10 @@ public class LoginActivity extends Activity {
         }
 
         mUsername = username;
+        SharedPreferences sharedPref = this.getPreferences(Context.MODE_PRIVATE);
+        SharedPreferences.Editor editor = sharedPref.edit();
+        editor.putString("username", mUsername);
+        editor.commit();
 
         // perform the user login attempt.
         mSocket.emit("add user", username);
