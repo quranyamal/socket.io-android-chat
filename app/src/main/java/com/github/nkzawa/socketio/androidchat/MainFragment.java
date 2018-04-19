@@ -25,6 +25,7 @@ import android.widget.ImageButton;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -43,6 +44,9 @@ public class MainFragment extends Fragment {
     private static final String TAG = "MainFragment";
 
     private static final int REQUEST_LOGIN = 0;
+    private static final int REQUEST_FRIEND = 1;
+
+    private static final String SEPARATOR = "|||";
 
     private static final int TYPING_TIMER_LENGTH = 600;
 
@@ -53,6 +57,8 @@ public class MainFragment extends Fragment {
     private boolean mTyping = false;
     private Handler mTypingHandler = new Handler();
     private String mUsername;
+    private String mFriendname;
+    private String mFriendid;
     private Socket mSocket;
 
     private Boolean isConnected = true;
@@ -118,6 +124,7 @@ public class MainFragment extends Fragment {
         mSocket.off("user left", onUserLeft);
         mSocket.off("typing", onTyping);
         mSocket.off("stop typing", onStopTyping);
+
     }
 
     @Override
@@ -179,12 +186,14 @@ public class MainFragment extends Fragment {
             getActivity().finish();
             return;
         }
-
         mUsername = data.getStringExtra("username");
         int numUsers = data.getIntExtra("numUsers", 1);
+        mFriendname = data.getStringExtra("friendname");
+        mFriendid = data.getStringExtra("friendid");
 
         addLog(getResources().getString(R.string.message_welcome));
         addParticipantsLog(numUsers);
+        Log.e("FRIENDID", mFriendid);
     }
 
     @Override
@@ -229,7 +238,7 @@ public class MainFragment extends Fragment {
 
     private void addTyping(String username) {
         mMessages.add(new Message.Builder(Message.TYPE_ACTION)
-                .username(username).build());
+                .username(username).receiverId(mFriendid).build());
         mAdapter.notifyItemInserted(mMessages.size() - 1);
         scrollToBottom();
     }
@@ -260,6 +269,7 @@ public class MainFragment extends Fragment {
         addMessage(mUsername, message);
 
         // perform the sending message attempt.
+        message = message + SEPARATOR + mFriendid;
         mSocket.emit("new message", message);
     }
 
@@ -267,6 +277,11 @@ public class MainFragment extends Fragment {
         mUsername = null;
         Intent intent = new Intent(getActivity(), LoginActivity.class);
         startActivityForResult(intent, REQUEST_LOGIN);
+    }
+
+    private void chooseFriend() {
+        Intent intent = new Intent(getActivity(), UserListActivity.class);
+        startActivityForResult(intent, REQUEST_FRIEND);
     }
 
     private void leave() {
@@ -409,6 +424,7 @@ public class MainFragment extends Fragment {
                     JSONObject data = (JSONObject) args[0];
                     String username;
                     try {
+                        Log.e("NOTE","TYPING");
                         username = data.getString("username");
                     } catch (JSONException e) {
                         Log.e(TAG, e.getMessage());
@@ -439,6 +455,7 @@ public class MainFragment extends Fragment {
             });
         }
     };
+
 
     private Runnable onTypingTimeout = new Runnable() {
         @Override

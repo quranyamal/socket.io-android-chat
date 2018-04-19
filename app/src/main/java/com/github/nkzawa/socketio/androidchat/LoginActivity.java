@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
 import android.text.TextUtils;
+import android.util.Log;
 import android.view.KeyEvent;
 import android.view.View;
 import android.view.View.OnClickListener;
@@ -22,11 +23,19 @@ import org.json.JSONObject;
  */
 public class LoginActivity extends Activity {
 
+    private static final int REQUEST_FRIEND = 1;
+
     private EditText mUsernameView;
 
     private String mUsername;
 
     private Socket mSocket;
+
+    private String mFriendname;
+
+    private String mFriendid;
+
+    private int numUsers;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -92,6 +101,7 @@ public class LoginActivity extends Activity {
 
         // perform the user login attempt.
         mSocket.emit("add user", username);
+        chooseFriend();
     }
 
     private Emitter.Listener onLogin = new Emitter.Listener() {
@@ -99,20 +109,37 @@ public class LoginActivity extends Activity {
         public void call(Object... args) {
             JSONObject data = (JSONObject) args[0];
 
-            int numUsers;
             try {
                 numUsers = data.getInt("numUsers");
             } catch (JSONException e) {
                 return;
             }
-
-            Intent intent = new Intent();
-            intent.putExtra("username", mUsername);
-            intent.putExtra("numUsers", numUsers);
-            setResult(RESULT_OK, intent);
-            finish();
         }
     };
+
+    @Override
+    public void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (Activity.RESULT_OK != resultCode) {
+            this.finish();
+            return;
+        }
+        mFriendname = data.getStringExtra("friendname");
+        mFriendid = data.getStringExtra("friendid");
+
+        Intent intent = new Intent();
+        intent.putExtra("username", mUsername);
+        intent.putExtra("numUsers", numUsers);
+        intent.putExtra("friendname", mFriendname);
+        intent.putExtra("friendid",mFriendid);
+        setResult(RESULT_OK, intent);
+        finish();
+    }
+
+    private void chooseFriend() {
+        Intent intent = new Intent(this, UserListActivity.class);
+        startActivityForResult(intent, REQUEST_FRIEND);
+    }
 }
 
 

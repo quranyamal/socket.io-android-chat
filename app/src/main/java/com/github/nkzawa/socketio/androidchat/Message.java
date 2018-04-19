@@ -9,6 +9,7 @@ public class Message {
     private int mType;
     private String mMessage;
     private String mUsername;
+    private String mReceiverId;
 
     private Message() {}
 
@@ -24,11 +25,16 @@ public class Message {
         return mUsername;
     };
 
+    public String getmReceiverId() {
+        return mReceiverId;
+    }
+
 
     public static class Builder {
         private final int mType;
         private String mUsername;
         private String mMessage;
+        private String mReceiverId;
 
         public Builder(int type) {
             mType = type;
@@ -44,11 +50,17 @@ public class Message {
             return this;
         }
 
+        public Builder receiverId(String id) {
+            mReceiverId = id;
+            return this;
+        }
+
         public Message build() {
             Message message = new Message();
             message.mType = mType;
             message.mUsername = mUsername;
             message.mMessage = mMessage;
+            message.mReceiverId = mReceiverId;
             return message;
         }
     }
