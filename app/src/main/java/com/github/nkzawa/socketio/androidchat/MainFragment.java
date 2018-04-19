@@ -509,11 +509,11 @@ public class MainFragment extends Fragment {
                         addMessage("selfY",publicKey.getY().toString());
                         addMessage("frndX",friendPublicKey.getX().toString());
                         addMessage("frndY",friendPublicKey.getY().toString());
-                        addMessage("p+p", (new ECCDH().additionPoint(friendPublicKey, friendPublicKey, _c)).toString());
-                        addMessage("p*p", (new ECCDH().doublePoint(friendPublicKey, _c)).toString());
+                        //addMessage("p+p", (new ECCDH().additionPoint(friendPublicKey, friendPublicKey, _c)).toString());
+                        //addMessage("2*p", (new ECCDH().doublePoint(friendPublicKey, _c)).toString());
                         Log.e("CEK KEY", cipherKey);
-                        Log.e("p+p", (new ECCDH().additionPoint(friendPublicKey, friendPublicKey, _c)).toString());
-                        Log.e("p*p", (new ECCDH().doublePoint(friendPublicKey, _c)).toString());
+                        //Log.e("p+p", (new ECCDH().additionPoint(friendPublicKey, friendPublicKey, _c)).toString());
+                        //Log.e("p*p", (new ECCDH().doublePoint(friendPublicKey, _c)).toString());
                     } catch (JSONException e) {
                         e.printStackTrace();
                     }

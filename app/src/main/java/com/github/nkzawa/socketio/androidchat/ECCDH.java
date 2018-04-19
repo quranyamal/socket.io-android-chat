@@ -68,9 +68,10 @@ public class ECCDH {
         } else if (k.equals(BigInteger.valueOf(2))) {
             return doublePoint(p, c);
         } else if (k.mod(BigInteger.valueOf(2)).equals(BigInteger.ZERO)) {
-            return doublePoint(multiplePoint(p, k.divide(BigInteger.valueOf(2)), c), c);
+            // return doublePoint(multiplePoint(p, k.divide(BigInteger.valueOf(2)), c), c);
+            return multiplePoint(doublePoint(p, c), k.divide(BigInteger.valueOf(2)), c);
         } else if (k.mod(BigInteger.valueOf(2)).equals(BigInteger.ONE)) {
-            return additionPoint(doublePoint(multiplePoint(p, k.divide(BigInteger.valueOf(2)), c), c), p, c);
+            return additionPoint(multiplePoint(doublePoint(p, c), k.divide(BigInteger.valueOf(2)), c), p, c);
         }
         return new Point(BigInteger.ZERO, BigInteger.ZERO);
     }
