@@ -122,6 +122,18 @@ public class MainFragment extends Fragment {
         basePoint = new ECCDH().generatePublicKey(_c);
         publicKey = new ECCDH().multiplePoint(basePoint, privateKey, _c);
 
+
+        String inputs;
+        inputs = "test";
+        try {
+            inputs = encrypt(inputs,"kenapa");
+            inputs = decrypt(inputs, "kenapa");
+            Log.e("input",inputs);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+
         startSignIn();
     }
 
@@ -504,16 +516,11 @@ public class MainFragment extends Fragment {
                         friendPublicKey = new Point(pubKey);
                         secretKey = new ECCDH().multiplePoint(friendPublicKey, privateKey, _c);
                         cipherKey = secretKey.getX().toString();
-                        addMessage("key",cipherKey);
-                        addMessage("selfX",publicKey.getX().toString());
-                        addMessage("selfY",publicKey.getY().toString());
-                        addMessage("frndX",friendPublicKey.getX().toString());
-                        addMessage("frndY",friendPublicKey.getY().toString());
-                        //addMessage("p+p", (new ECCDH().additionPoint(friendPublicKey, friendPublicKey, _c)).toString());
-                        //addMessage("2*p", (new ECCDH().doublePoint(friendPublicKey, _c)).toString());
-                        Log.e("CEK KEY", cipherKey);
-                        //Log.e("p+p", (new ECCDH().additionPoint(friendPublicKey, friendPublicKey, _c)).toString());
-                        //Log.e("p*p", (new ECCDH().doublePoint(friendPublicKey, _c)).toString());
+                        //addMessage("key",cipherKey);
+                        //addMessage("selfX",publicKey.getX().toString());
+                        //addMessage("selfY",publicKey.getY().toString());
+                        //addMessage("frndX",friendPublicKey.getX().toString());
+                        //addMessage("frndY",friendPublicKey.getY().toString());
                     } catch (JSONException e) {
                         e.printStackTrace();
                     }

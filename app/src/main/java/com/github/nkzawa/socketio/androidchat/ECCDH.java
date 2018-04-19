@@ -29,7 +29,14 @@ public class ECCDH {
         BigInteger deltaY = p.getY().subtract(q.getY());
         BigInteger deltaX = p.getX().subtract(q.getX());
 
-        BigInteger gradien = deltaX.modInverse(c.getP()).multiply(deltaY).mod(c.getP());
+        BigInteger gradien = BigInteger.ZERO;
+        if (deltaX.gcd(c.getP()) == BigInteger.ONE) {
+            // BigInteger gradien = deltaX.modInverse(c.getP()).multiply(deltaY).mod(c.getP());
+            gradien  = deltaY.mod(c.getP()).multiply(deltaX.modInverse(c.getP()).mod(c.getP()));
+        } else if (deltaY.mod(deltaX.gcd(c.getP())) == BigInteger.ZERO) {
+            gradien = deltaY.divide(deltaX).mod(c.getP());
+        }
+
 
         xr = (gradien.pow(2).subtract(p.getX()).subtract(q.getX())).mod(c.getP());
         yr = (gradien.multiply((p.getX().subtract(xr))).subtract(p.getY())).mod(c.getP());
@@ -40,18 +47,24 @@ public class ECCDH {
     Point doublePoint(Point p, Curve c) {
         BigInteger xr, yr;
 
-        // int gradien = (3 * p.getX() + c.getA()) / (2 * p.getY());
+        // int gradien = (3 * p.getX() * p.getX() + c.getA()) / (2 * p.getY());
         // xr = gradien * gradien - 2 * p.getX();
         // yr = gradien * (p.getX() - xr) - p.getY();
 
         // BigInteger gradien = (BigInteger.valueOf(3).multiply(p.getX()).add(c.getA())).divide(BigInteger.valueOf(2).multiply(p.getY()));
-        BigInteger deltaY = BigInteger.valueOf(3).multiply(p.getX()).add(c.getA());
+        BigInteger deltaY = BigInteger.valueOf(3).multiply(p.getX().pow(2)).add(c.getA());
         BigInteger deltaX = BigInteger.valueOf(2).multiply(p.getY());
+        BigInteger gradien = BigInteger.ZERO;
+        if (deltaX.gcd(c.getP()) == BigInteger.ONE) {
+            // BigInteger gradien = deltaX.modInverse(c.getP()).multiply(deltaY).mod(c.getP());
+            gradien  = deltaY.mod(c.getP()).multiply(deltaX.modInverse(c.getP()).mod(c.getP()));
+        } else if (deltaY.mod(deltaX.gcd(c.getP())) == BigInteger.ZERO) {
+            gradien = deltaY.divide(deltaX).mod(c.getP());
+        }
 
-        BigInteger gradien = deltaX.modInverse(c.getP()).multiply(deltaY).mod(c.getP());
 
-        xr = (gradien.pow(2)).min(p.getX().multiply(BigInteger.valueOf(2))).mod(c.getP());
-        yr = gradien.multiply((p.getX().min(xr))).min(p.getY()).mod(c.getP());
+        xr = (gradien.pow(2)).subtract(p.getX().multiply(BigInteger.valueOf(2))).mod(c.getP());
+        yr = gradien.multiply((p.getX().subtract(xr))).subtract(p.getY()).mod(c.getP());
         return new Point(xr, yr);
     }
 
