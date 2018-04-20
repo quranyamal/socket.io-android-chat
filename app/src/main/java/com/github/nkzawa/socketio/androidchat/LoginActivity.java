@@ -100,10 +100,11 @@ public class LoginActivity extends Activity {
         }
 
         mUsername = username;
-        SharedPreferences sharedPref = this.getPreferences(Context.MODE_PRIVATE);
-        SharedPreferences.Editor editor = sharedPref.edit();
-        editor.putString("username", mUsername);
-        editor.commit();
+//        SharedPreferences sharedPref = this.getPreferences(Context.MODE_PRIVATE);
+//        SharedPreferences.Editor editor = sharedPref.edit();
+//        editor.putString("username", mUsername);
+//        editor.commit();
+
 
         // perform the user login attempt.
         mSocket.emit("add user", username);
@@ -144,6 +145,7 @@ public class LoginActivity extends Activity {
 
     private void chooseFriend() {
         Intent intent = new Intent(this, UserListActivity.class);
+        intent.putExtra("username", mUsername);
         startActivityForResult(intent, REQUEST_FRIEND);
     }
 }

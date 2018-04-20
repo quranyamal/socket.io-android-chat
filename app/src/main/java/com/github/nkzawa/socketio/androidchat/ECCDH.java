@@ -22,16 +22,11 @@ public class ECCDH {
     Point additionPoint(Point p, Point q, Curve c) {
         BigInteger xr, yr;
 
-        // BigInteger gradien = (p.getY() - q.getY()) / (p.getX() - q.getX());
-        // xr = gradien.pow(2) - p.getX() - q.getX();
-        // yr = gradien * (p.getX() - xr) - p.getY();
-
         BigInteger deltaY = p.getY().subtract(q.getY());
         BigInteger deltaX = p.getX().subtract(q.getX());
 
         BigInteger gradien = BigInteger.ZERO;
         if (deltaX.gcd(c.getP()) == BigInteger.ONE) {
-            // BigInteger gradien = deltaX.modInverse(c.getP()).multiply(deltaY).mod(c.getP());
             gradien  = deltaY.mod(c.getP()).multiply(deltaX.modInverse(c.getP()).mod(c.getP()));
         } else if (deltaY.mod(deltaX.gcd(c.getP())) == BigInteger.ZERO) {
             gradien = deltaY.divide(deltaX).mod(c.getP());
@@ -47,11 +42,6 @@ public class ECCDH {
     Point doublePoint(Point p, Curve c) {
         BigInteger xr, yr;
 
-        // int gradien = (3 * p.getX() * p.getX() + c.getA()) / (2 * p.getY());
-        // xr = gradien * gradien - 2 * p.getX();
-        // yr = gradien * (p.getX() - xr) - p.getY();
-
-        // BigInteger gradien = (BigInteger.valueOf(3).multiply(p.getX()).add(c.getA())).divide(BigInteger.valueOf(2).multiply(p.getY()));
         BigInteger deltaY = BigInteger.valueOf(3).multiply(p.getX().pow(2)).add(c.getA());
         BigInteger deltaX = BigInteger.valueOf(2).multiply(p.getY());
         BigInteger gradien = BigInteger.ZERO;
@@ -69,19 +59,12 @@ public class ECCDH {
     }
 
     Point multiplePoint(Point p, BigInteger k, Curve c) {
-        // if (k.equals(BigInteger.ONE)) {
-        //     return p;
-        // } else if (k.equals(BigInteger.valueOf(2))) {
-        //     return doublePoint(p, c);
-        // } else {
-        //     return additionPoint(doublePoint(p, c), multiplePoint(p, k.min(BigInteger.valueOf(2)), c), c);
-        // }
+
         if (k.equals(BigInteger.ONE)) {
             return p;
         } else if (k.equals(BigInteger.valueOf(2))) {
             return doublePoint(p, c);
         } else if (k.mod(BigInteger.valueOf(2)).equals(BigInteger.ZERO)) {
-            // return doublePoint(multiplePoint(p, k.divide(BigInteger.valueOf(2)), c), c);
             return multiplePoint(doublePoint(p, c), k.divide(BigInteger.valueOf(2)), c);
         } else if (k.mod(BigInteger.valueOf(2)).equals(BigInteger.ONE)) {
             return additionPoint(multiplePoint(doublePoint(p, c), k.divide(BigInteger.valueOf(2)), c), p, c);

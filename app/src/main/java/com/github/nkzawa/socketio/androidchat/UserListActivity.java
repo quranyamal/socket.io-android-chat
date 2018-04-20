@@ -33,7 +33,6 @@ public class UserListActivity extends AppCompatActivity {
 
     private HashMap<String,String> usernameIdMap;
 
-    private String mUsername;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -41,8 +40,9 @@ public class UserListActivity extends AppCompatActivity {
         setContentView(R.layout.activity_user_list);
         context = this;
         usernameIdMap = new HashMap<String, String>();
-        SharedPreferences sharedPref = this.getPreferences(Context.MODE_PRIVATE);
-        mUsername = sharedPref.getString("username","");
+//        SharedPreferences sharedPref = this.getPreferences(Context.MODE_PRIVATE);
+//        mUsername = sharedPref.getString("username","");
+//        Log.e("your username", mUsername);
 
         ChatApplication app = (ChatApplication) getApplication();
         mSocket = app.getSocket();
@@ -83,9 +83,11 @@ public class UserListActivity extends AppCompatActivity {
                 public void run() {
                     JSONObject data = (JSONObject) args[0];
                     try {
+                        String mUsername = getIntent().getExtras().getString("username");
                         JSONArray userlist = data.getJSONArray("userlist");
                         Log.e("NOTE",userlist.toString());
-                        String[] items = new String[userlist.length()];
+                        String[] items = new String[userlist.length()-1];
+                        int idx = 0;
                         usernameIdMap.clear();
                         for (int i = 0; i < userlist.length(); i++) {
                             JSONObject user = userlist.getJSONObject(i);
@@ -93,7 +95,8 @@ public class UserListActivity extends AppCompatActivity {
                             if (!username.equals(mUsername)) {
                                 String id = user.getString("id");
                                 usernameIdMap.put(username, id);
-                                items[i] = username;
+                                items[idx] = username;
+                                idx++;
                             }
                         }
                         ListViewAdapter adapter = new ListViewAdapter(context, R.layout.list_item, items);
