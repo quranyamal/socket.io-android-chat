@@ -1,5 +1,6 @@
 package com.github.nkzawa.socketio.androidchat;
 
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
@@ -510,6 +511,7 @@ public class MainFragment extends Fragment {
         @Override
         public void call(final Object... args) {
             getActivity().runOnUiThread(new Runnable() {
+                @SuppressLint("LongLogTag")
                 @Override
                 public void run() {
                     JSONObject data = (JSONObject) args[0];
@@ -520,11 +522,19 @@ public class MainFragment extends Fragment {
                         secretKey = new ECCDH().multiplePoint(friendPublicKey, privateKey, _c);
                         cipherKey = secretKey.getX().toString();
                         chessCipher.setKey(cipherKey);
-                        //addMessage("key",cipherKey);
-                        //addMessage("selfX",publicKey.getX().toString());
-                        //addMessage("selfY",publicKey.getY().toString());
-                        //addMessage("frndX",friendPublicKey.getX().toString());
-                        //addMessage("frndY",friendPublicKey.getY().toString());
+                        addMessage("key",cipherKey);
+                        addMessage("selfX",publicKey.getX().toString());
+                        addMessage("selfY",publicKey.getY().toString());
+                        addMessage("friendX",friendPublicKey.getX().toString());
+                        addMessage("friendY",friendPublicKey.getY().toString());
+//                        Log.e("key", cipherKey);
+//                        Log.e("selfPublicKey.X", publicKey.getX().toString());
+//                        Log.e("selfPublicKey.Y", publicKey.getY().toString());
+//                        Log.e("selfPrivateKey", privateKey.toString());
+//                        Log.e("friendPublicKey.X", friendPublicKey.getX().toString());
+//                        Log.e("friendPublicKey.Y", friendPublicKey.getY().toString());
+//                        Log.e("encryption-decryptionKey",cipherKey.toString());
+
                     } catch (JSONException e) {
                         e.printStackTrace();
                     }
